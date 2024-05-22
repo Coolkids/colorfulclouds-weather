@@ -343,12 +343,12 @@ class colorfulclouds_weatherEntity(WeatherEntity):
     @property
     def forecast_minutely(self):
         """实时天气预报描述-分钟"""
-        return self.coordinator.data['result']['minutely']['description']
+        return ""
 
     @property
     def forecast_minutely_probability(self):
         """分钟概率"""
-        return self.coordinator.data['result']['minutely']['probability']
+        return -1
 
     @property
     def forecast_alert(self):
