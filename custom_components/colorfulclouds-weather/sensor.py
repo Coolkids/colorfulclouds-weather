@@ -5,7 +5,6 @@ from homeassistant.const import (
     ATTR_ATTRIBUTION,
     ATTR_DEVICE_CLASS,
     CONF_NAME,
-    DEVICE_CLASS_TEMPERATURE,
 )
 import time
 

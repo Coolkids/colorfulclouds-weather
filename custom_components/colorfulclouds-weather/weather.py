@@ -32,16 +32,10 @@ from homeassistant.components.weather import (
 )
 from homeassistant.const import (
     CONF_NAME,
-    LENGTH_INCHES,
-    LENGTH_KILOMETERS,
-    LENGTH_MILES,
-    LENGTH_MILLIMETERS,
-    PRESSURE_HPA,
-    PRESSURE_INHG,
-    SPEED_KILOMETERS_PER_HOUR,
-    SPEED_MILES_PER_HOUR,
-    TEMP_CELSIUS,
-    TEMP_FAHRENHEIT,
+    UnitOfPressure,
+    UnitOfTemperature,
+    UnitOfSpeed,
+    UnitOfLength,
 )
 from .const import (
     ATTRIBUTION,
@@ -60,7 +54,7 @@ CONDITION_MAP = {
     'CLEAR_DAY': 'sunny',
     'CLEAR_NIGHT': 'clear-night',
     'PARTLY_CLOUDY_DAY': 'partlycloudy',
-    'PARTLY_CLOUDY_NIGHT':'partlycloudy',
+    'PARTLY_CLOUDY_NIGHT': 'partlycloudy',
     'CLOUDY': 'cloudy',
     'LIGHT_HAZE': 'fog',
     'MODERATE_HAZE': 'fog',
@@ -89,7 +83,7 @@ CONDITION_CN_MAP = {
     'CLEAR_DAY': '晴',
     'CLEAR_NIGHT': '晴',
     'PARTLY_CLOUDY_DAY': '多云',
-    'PARTLY_CLOUDY_NIGHT':'多云',
+    'PARTLY_CLOUDY_NIGHT': '多云',
     'CLOUDY': '阴',
     'LIGHT_HAZE': '轻雾',
     'MODERATE_HAZE': '中雾',
@@ -114,11 +108,11 @@ CONDITION_CN_MAP = {
     'SNOW': '雪',
 }
 
-WINDDIRECTIONS =[
+WINDDIRECTIONS = [
     '北', '北-东北', '东北', '东-东北', '东', '东-东南', '东南', '南-东南',
     '南', '南-西南', '西南', '西-西南', '西', '西-西北', '西北', '北-西北', '北'
 ]
-      
+
 TRANSLATE_SUGGESTION = {
     'AnglingIndex': '钓鱼指数',
     'AirConditionerIndex': '空调开机指数',
@@ -157,7 +151,8 @@ TRANSLATE_SUGGESTION = {
 
 ATTR_SUGGESTION = "suggestion"
 
-async def async_setup_entry(hass, config_entry, async_add_entities):    
+
+async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add a colorfulclouds-weather weather entity from a config_entry."""
     name = config_entry.data[CONF_NAME]
     life = config_entry.options.get(CONF_LIFEINDEX, False)
@@ -166,12 +161,13 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     _LOGGER.debug("metric: %s", coordinator.data["is_metric"])
 
     async_add_entities([colorfulclouds_weatherEntity(name, life, coordinator)], False)
-            
+
+
 class colorfulclouds_weatherEntity(WeatherEntity):
     """Representation of a weather condition."""
 
     def __init__(self, name, life, coordinator):
-        
+
         self.coordinator = coordinator
         _LOGGER.debug("coordinator: %s", coordinator.data["server_time"])
         self._name = name
@@ -187,22 +183,21 @@ class colorfulclouds_weatherEntity(WeatherEntity):
         # Coordinator data is used also for sensors which don't have units automatically
         # converted, hence the weather entity's native units follow the configured unit
         # system
-        if self.coordinator.data["is_metric"]=="metric:v2":
-            self._attr_native_precipitation_unit = LENGTH_MILLIMETERS
-            self._attr_native_pressure_unit = PRESSURE_HPA
-            self._attr_native_temperature_unit = TEMP_CELSIUS
-            self._attr_native_visibility_unit = LENGTH_KILOMETERS
-            self._attr_native_wind_speed_unit = SPEED_KILOMETERS_PER_HOUR
+        if self.coordinator.data["is_metric"] == "metric:v2":
+            self._attr_native_precipitation_unit = UnitOfLength.MILLIMETERS
+            self._attr_native_pressure_unit = UnitOfPressure.HPA
+            self._attr_native_temperature_unit = UnitOfTemperature.CELSIUS
+            self._attr_native_visibility_unit = UnitOfLength.KILOMETERS
+            self._attr_native_wind_speed_unit = UnitOfSpeed.KILOMETERS_PER_HOUR
             self._unit_system = "Metric"
         else:
             self._unit_system = "Imperial"
-            self._attr_native_precipitation_unit = LENGTH_INCHES
-            self._attr_native_pressure_unit = PRESSURE_INHG
-            self._attr_native_temperature_unit = TEMP_FAHRENHEIT
-            self._attr_native_visibility_unit = LENGTH_MILES
-            self._attr_native_wind_speed_unit = SPEED_MILES_PER_HOUR
-            
-            
+            self._attr_native_precipitation_unit = UnitOfLength.INCHES
+            self._attr_native_pressure_unit = UnitOfPressure.INHG
+            self._attr_native_temperature_unit = UnitOfTemperature.FAHRENHEIT
+            self._attr_native_visibility_unit = UnitOfLength.MILES
+            self._attr_native_wind_speed_unit = UnitOfSpeed.MILES_PER_HOUR
+
         self._forecast_daily = forecast_daily
         self._forecast_hourly = forecast_hourly
         self._forecast_twice_daily = forecast_twice_daily
@@ -213,16 +208,16 @@ class colorfulclouds_weatherEntity(WeatherEntity):
             self._attr_supported_features |= WeatherEntityFeature.FORECAST_HOURLY
         if self._forecast_twice_daily:
             self._attr_supported_features |= WeatherEntityFeature.FORECAST_TWICE_DAILY
-        
+
     @property
     def name(self):
         return self._name
-        
+
     @property
     def attribution(self):
         """Return the attribution."""
         return ATTRIBUTION
-        
+
     @property
     def unique_id(self):
         """Return a unique_id for this entity."""
@@ -236,9 +231,9 @@ class colorfulclouds_weatherEntity(WeatherEntity):
             "identifiers": {(DOMAIN, self.coordinator.data["location_key"])},
             "name": self._name,
             "manufacturer": MANUFACTURER,
-        }        
+        }
         from homeassistant.helpers.device_registry import DeviceEntryType
-        info["entry_type"] = DeviceEntryType.SERVICE        
+        info["entry_type"] = DeviceEntryType.SERVICE
         return info
 
     @property
@@ -249,9 +244,9 @@ class colorfulclouds_weatherEntity(WeatherEntity):
     @property
     def available(self):
         """Return True if entity is available."""
-        #return self.coordinator.last_update_success
+        # return self.coordinator.last_update_success
         return (int(datetime.now().timestamp()) - int(self.coordinator.data["server_time"]) < 1800)
-        
+
     @property
     def condition(self):
         """Return the weather condition."""
@@ -283,7 +278,7 @@ class colorfulclouds_weatherEntity(WeatherEntity):
 
     @property
     def native_pressure(self):
-        return round(float(self.coordinator.data["result"]['realtime']['pressure'])/100)
+        return round(float(self.coordinator.data["result"]['realtime']['pressure']) / 100)
 
     @property
     def pm25(self):
@@ -329,12 +324,12 @@ class colorfulclouds_weatherEntity(WeatherEntity):
     def aqi_usa(self):
         """AQI USA"""
         return self.coordinator.data["result"]['realtime']['air_quality']['aqi']['usa']
-    
+
     @property
     def aqi_usa_description(self):
         """AQI USA"""
         return self.coordinator.data["result"]['realtime']['air_quality']['description']['usa']
-    
+
     @property
     def forecast_hourly(self):
         """实时天气预报描述-小时"""
@@ -355,18 +350,17 @@ class colorfulclouds_weatherEntity(WeatherEntity):
         """天气预警"""
         alert = self.coordinator.data['result']['alert'] if 'alert' in self.coordinator.data['result'] else ""
         return alert
-        
+
     @property
     def forecast_keypoint(self):
         """实时天气预报描述-注意事项"""
-        return self.coordinator.data['result']['forecast_keypoint']        
-        
+        return self.coordinator.data['result']['forecast_keypoint']
+
     @property
     def updatetime(self):
         """实时天气预报获取时间."""
-        return datetime.fromtimestamp(self.coordinator.data['server_time'])          
-        
-        
+        return datetime.fromtimestamp(self.coordinator.data['server_time'])
+
     async def async_forecast_daily(self) -> list[Forecast]:
         """Return the daily forecast."""
         reftime = dt_util.now().replace(hour=16, minute=00)
@@ -399,7 +393,6 @@ class colorfulclouds_weatherEntity(WeatherEntity):
 
         return forecast_data
 
-
     async def async_forecast_hourly(self) -> list[Forecast]:
         """Return the hourly forecast."""
         reftime = dt_util.now().replace(hour=16, minute=00)
@@ -414,7 +407,7 @@ class colorfulclouds_weatherEntity(WeatherEntity):
         hourly_data['hourly_wind'] = self.coordinator.data['result']['hourly']['wind']
         hourly_data['hourly_visibility'] = self.coordinator.data['result']['hourly']['visibility']
         hourly_data['hourly_aqi'] = self.coordinator.data['result']['hourly']['air_quality']['aqi']
-        hourly_data['hourly_pm25'] = self.coordinator.data['result']['hourly']['air_quality']['pm25']        
+        hourly_data['hourly_pm25'] = self.coordinator.data['result']['hourly']['air_quality']['pm25']
 
         if hourly_data['hourly_precipitation']:
             summarystr = ""
@@ -424,21 +417,22 @@ class colorfulclouds_weatherEntity(WeatherEntity):
             summarystart = 0
             summaryend = 0
             summaryprecip = 0
-            
+
             hourly_forecast_data = []
             for i in range(len(hourly_data['hourly_precipitation'])):
                 _LOGGER.debug("datetime: %s", hourly_data['hourly_precipitation'][i].get("datetime"))
-                date_obj = datetime.fromisoformat(hourly_data['hourly_precipitation'][i].get("datetime").replace('Z', '+00:00'))
+                date_obj = datetime.fromisoformat(
+                    hourly_data['hourly_precipitation'][i].get("datetime").replace('Z', '+00:00'))
                 formatted_date = datetime.strftime(date_obj, '%Y-%m-%d %H:%M')
                 if hourly_data['hourly_precipitation'][i].get("probability"):
                     pop = str(round(hourly_data['hourly_precipitation'][i].get("probability")))
                 else:
                     pop = 0
-                    
+
                 hourly_forecastItem = {
                     'skycon': hourly_data['hourly_skycon'][i]['value'],
                     ATTR_FORECAST_NATIVE_TEMP: round(hourly_data['hourly_temperature'][i]['value']),
-                    'humidity': round(hourly_data['hourly_humidity'][i]['value'],2),
+                    'humidity': round(hourly_data['hourly_humidity'][i]['value'], 2),
                     'cloudrate': hourly_data['hourly_cloudrate'][i]['value'],
                     ATTR_FORECAST_NATIVE_WIND_SPEED: hourly_data['hourly_wind'][i]['speed'],
                     ATTR_FORECAST_WIND_BEARING: hourly_data['hourly_wind'][i]['direction'],
@@ -451,48 +445,54 @@ class colorfulclouds_weatherEntity(WeatherEntity):
                     'condition': CONDITION_MAP[hourly_data['hourly_skycon'][i]['value']],
                     'condition_cn': CONDITION_CN_MAP[hourly_data['hourly_skycon'][i]['value']],
                     "winddir": self.getWindDir(hourly_data['hourly_wind'][i]['direction']),
-                    "windscale": self.getWindLevel(hourly_data['hourly_wind'][i]['speed'])                    
+                    "windscale": self.getWindLevel(hourly_data['hourly_wind'][i]['speed'])
                 }
                 reftime = reftime + timedelta(hours=1)
-                hourly_forecast_data.append(hourly_forecastItem)    
-                            
-                if float(hourly_data['hourly_precipitation'][i]['value'])>0.1 and summarystart > 0:
+                hourly_forecast_data.append(hourly_forecastItem)
+
+                if float(hourly_data['hourly_precipitation'][i]['value']) > 0.1 and summarystart > 0:
                     if summarystart < 4:
-                        summarystr = str(summarystart)+"小时后转"+ CONDITION_CN_MAP[hourly_data['hourly_skycon'][i]['value']] +"。"
+                        summarystr = str(summarystart) + "小时后转" + CONDITION_CN_MAP[
+                            hourly_data['hourly_skycon'][i]['value']] + "。"
                     else:
                         if int(datetime.strftime(date_obj, '%H')) > int(datetime.now().strftime("%H")):
                             summaryday = "今天"
                         else:
                             summaryday = "明天"
-                        summarystr = summaryday + str(int(datetime.strftime(date_obj, '%H')))+"点后转"+ CONDITION_CN_MAP[hourly_data['hourly_skycon'][i]['value']] +"。"
+                        summarystr = summaryday + str(int(datetime.strftime(date_obj, '%H'))) + "点后转" + \
+                                     CONDITION_CN_MAP[hourly_data['hourly_skycon'][i]['value']] + "。"
                     summarystart = -1000
                     summaryprecip = float(hourly_data['hourly_precipitation'][i]['value'])
-                if float(hourly_data['hourly_precipitation'][i]['value'])>0.1 and float(hourly_data['hourly_precipitation'][i]['value']) > summaryprecip:
+                if float(hourly_data['hourly_precipitation'][i]['value']) > 0.1 and float(
+                        hourly_data['hourly_precipitation'][i]['value']) > summaryprecip:
                     if int(datetime.strftime(date_obj, '%H')) > int(datetime.now().strftime("%H")):
                         summaryday = "今天"
                     else:
                         summaryday = "明天"
                     probablestr = ""
-                    summarymaxprecipstr = summaryday + str(int(datetime.strftime(date_obj, '%H')))+"点为"+CONDITION_CN_MAP[hourly_data['hourly_skycon'][i]['value']] + "！"
+                    summarymaxprecipstr = summaryday + str(int(datetime.strftime(date_obj, '%H'))) + "点为" + \
+                                          CONDITION_CN_MAP[hourly_data['hourly_skycon'][i]['value']] + "！"
                     summaryprecip = float(hourly_data['hourly_precipitation'][i]['value'])
-                    summaryend ==0
+                    summaryend == 0
                     summaryendstr = ""
                 # _LOGGER.debug("hourly precip：%s", hourly_data['hourly_precipitation'][i]['value'])
-                if float(hourly_data['hourly_precipitation'][i]['value']) == 0 and summaryprecip>0 and summaryend ==0:
+                if float(
+                        hourly_data['hourly_precipitation'][i]['value']) == 0 and summaryprecip > 0 and summaryend == 0:
                     if int(datetime.strftime(date_obj, '%H')) > int(datetime.now().strftime("%H")):
                         summaryday = "今天"
                     else:
                         summaryday = "明天"
-                    summaryendstr = summaryday + str(int(datetime.strftime(date_obj, '%H')))+"点后转"+CONDITION_CN_MAP[hourly_data['hourly_skycon'][i]['value']]+"。"
+                    summaryendstr = summaryday + str(int(datetime.strftime(date_obj, '%H'))) + "点后转" + \
+                                    CONDITION_CN_MAP[hourly_data['hourly_skycon'][i]['value']] + "。"
                     summaryend += 1
                 summarystart += 1
             if summarystr:
                 hourly_summary = summarystr + summarymaxprecipstr + summaryendstr
             else:
                 hourly_summary = "未来24小时内无降水"
-                
+
             self.hourly_summary = hourly_summary
-            
+
             return hourly_forecast_data
 
     async def async_forecast_twice_daily(self) -> list[Forecast]:
@@ -516,7 +516,6 @@ class colorfulclouds_weatherEntity(WeatherEntity):
 
         return forecast_data
 
-        
     @property
     def state_attributes(self):
         _LOGGER.debug(self.coordinator.data)
@@ -538,25 +537,28 @@ class colorfulclouds_weatherEntity(WeatherEntity):
         data['aqi_usa'] = self.aqi_usa
         data['aqi_usa_description'] = self.aqi_usa_description
         data['update_time'] = self.updatetime
-        
+
         data['daily_forecast'] = self.daily_forecast()
         data['hourly_forecast'] = self.hourly_forecast()
         data['forecast_hourly_summary'] = self.hourly_summary
-        
+
         data['winddir'] = self.getWindDir(self.coordinator.data['result']['realtime']['wind']['direction'])
         data['windscale'] = self.getWindLevel(self.coordinator.data['result']['realtime']['wind']['speed'])
-        
+
         data['sunrise'] = self.coordinator.data['result']['daily']['astro'][0]['sunrise']['time']
         data['sunset'] = self.coordinator.data['result']['daily']['astro'][0]['sunset']['time']
-        
-        data['city'] = self.coordinator.data['result']['alert']['adcodes'][len(self.coordinator.data['result']['alert']['adcodes'])-1]['name']
-        
+
+        data['city'] = self.coordinator.data['result']['alert']['adcodes'][
+            len(self.coordinator.data['result']['alert']['adcodes']) - 1]['name']
+
         data['hourly_pm25'] = self.coordinator.data['result']['hourly']['air_quality']['pm25']
-        
+
         if self.life == True:
-            data[ATTR_SUGGESTION] = [{'title': k, 'title_cn': TRANSLATE_SUGGESTION.get(k,k), 'brf': v.get('desc'), 'txt': v.get('detail') } for k, v in self.coordinator.data['lifeindex'].items()]
-            #data["custom_ui_more_info"] = "colorfulclouds-weather-more-info"        
-        return data    
+            data[ATTR_SUGGESTION] = [
+                {'title': k, 'title_cn': TRANSLATE_SUGGESTION.get(k, k), 'brf': v.get('desc'), 'txt': v.get('detail')}
+                for k, v in self.coordinator.data['lifeindex'].items()]
+            # data["custom_ui_more_info"] = "colorfulclouds-weather-more-info"
+        return data
 
     def daily_forecast(self):
         forecast_data = []
@@ -585,10 +587,9 @@ class colorfulclouds_weatherEntity(WeatherEntity):
             forecast_data.append(data_dict)
 
         return forecast_data
-        
-    
+
     def hourly_forecast(self):
-        
+
         hourly_data = {}
         hourly_data['hourly_precipitation'] = self.coordinator.data['result']['hourly']['precipitation']
         hourly_data['hourly_temperature'] = self.coordinator.data['result']['hourly']['temperature']
@@ -599,7 +600,7 @@ class colorfulclouds_weatherEntity(WeatherEntity):
         hourly_data['hourly_wind'] = self.coordinator.data['result']['hourly']['wind']
         hourly_data['hourly_visibility'] = self.coordinator.data['result']['hourly']['visibility']
         hourly_data['hourly_aqi'] = self.coordinator.data['result']['hourly']['air_quality']['aqi']
-        hourly_data['hourly_pm25'] = self.coordinator.data['result']['hourly']['air_quality']['pm25']        
+        hourly_data['hourly_pm25'] = self.coordinator.data['result']['hourly']['air_quality']['pm25']
 
         if hourly_data['hourly_precipitation']:
             summarystr = ""
@@ -609,21 +610,22 @@ class colorfulclouds_weatherEntity(WeatherEntity):
             summarystart = 0
             summaryend = 0
             summaryprecip = 0
-            
+
             hourly_forecast_data = []
             for i in range(len(hourly_data['hourly_precipitation'])):
                 _LOGGER.debug("datetime: %s", hourly_data['hourly_precipitation'][i].get("datetime"))
-                date_obj = datetime.fromisoformat(hourly_data['hourly_precipitation'][i].get("datetime").replace('Z', '+00:00'))
+                date_obj = datetime.fromisoformat(
+                    hourly_data['hourly_precipitation'][i].get("datetime").replace('Z', '+00:00'))
                 formatted_date = datetime.strftime(date_obj, '%Y-%m-%d %H:%M')
                 if hourly_data['hourly_precipitation'][i].get("probability"):
                     pop = str(round(hourly_data['hourly_precipitation'][i].get("probability")))
                 else:
                     pop = 0
-                    
+
                 hourly_forecastItem = {
                     'skycon': hourly_data['hourly_skycon'][i]['value'],
                     ATTR_FORECAST_NATIVE_TEMP: round(hourly_data['hourly_temperature'][i]['value']),
-                    'humidity': round(hourly_data['hourly_humidity'][i]['value'],2),
+                    'humidity': round(hourly_data['hourly_humidity'][i]['value'], 2),
                     'cloudrate': hourly_data['hourly_cloudrate'][i]['value'],
                     ATTR_FORECAST_NATIVE_WIND_SPEED: hourly_data['hourly_wind'][i]['speed'],
                     ATTR_FORECAST_WIND_BEARING: hourly_data['hourly_wind'][i]['direction'],
@@ -636,55 +638,59 @@ class colorfulclouds_weatherEntity(WeatherEntity):
                     'condition': CONDITION_MAP[hourly_data['hourly_skycon'][i]['value']],
                     'condition_cn': CONDITION_CN_MAP[hourly_data['hourly_skycon'][i]['value']],
                     "winddir": self.getWindDir(hourly_data['hourly_wind'][i]['direction']),
-                    "windscale": self.getWindLevel(hourly_data['hourly_wind'][i]['speed'])                    
+                    "windscale": self.getWindLevel(hourly_data['hourly_wind'][i]['speed'])
                 }
-                hourly_forecast_data.append(hourly_forecastItem)    
-                            
-                if float(hourly_data['hourly_precipitation'][i]['value'])>0.1 and summarystart > 0:
+                hourly_forecast_data.append(hourly_forecastItem)
+
+                if float(hourly_data['hourly_precipitation'][i]['value']) > 0.1 and summarystart > 0:
                     if summarystart < 4:
-                        summarystr = str(summarystart)+"小时后转"+ CONDITION_CN_MAP[hourly_data['hourly_skycon'][i]['value']] +"。"
+                        summarystr = str(summarystart) + "小时后转" + CONDITION_CN_MAP[
+                            hourly_data['hourly_skycon'][i]['value']] + "。"
                     else:
                         if int(datetime.strftime(date_obj, '%H')) > int(datetime.now().strftime("%H")):
                             summaryday = "今天"
                         else:
                             summaryday = "明天"
-                        summarystr = summaryday + str(int(datetime.strftime(date_obj, '%H')))+"点后转"+ CONDITION_CN_MAP[hourly_data['hourly_skycon'][i]['value']] +"。"
+                        summarystr = summaryday + str(int(datetime.strftime(date_obj, '%H'))) + "点后转" + \
+                                     CONDITION_CN_MAP[hourly_data['hourly_skycon'][i]['value']] + "。"
                     summarystart = -1000
                     summaryprecip = float(hourly_data['hourly_precipitation'][i]['value'])
-                if float(hourly_data['hourly_precipitation'][i]['value'])>0.1 and float(hourly_data['hourly_precipitation'][i]['value']) > summaryprecip:
+                if float(hourly_data['hourly_precipitation'][i]['value']) > 0.1 and float(
+                        hourly_data['hourly_precipitation'][i]['value']) > summaryprecip:
                     if int(datetime.strftime(date_obj, '%H')) > int(datetime.now().strftime("%H")):
                         summaryday = "今天"
                     else:
                         summaryday = "明天"
                     probablestr = ""
-                    summarymaxprecipstr = summaryday + str(int(datetime.strftime(date_obj, '%H')))+"点为"+CONDITION_CN_MAP[hourly_data['hourly_skycon'][i]['value']] + "！"
+                    summarymaxprecipstr = summaryday + str(int(datetime.strftime(date_obj, '%H'))) + "点为" + \
+                                          CONDITION_CN_MAP[hourly_data['hourly_skycon'][i]['value']] + "！"
                     summaryprecip = float(hourly_data['hourly_precipitation'][i]['value'])
-                    summaryend ==0
+                    summaryend == 0
                     summaryendstr = ""
                 # _LOGGER.debug("hourly precip：%s", hourly_data['hourly_precipitation'][i]['value'])
-                if float(hourly_data['hourly_precipitation'][i]['value']) == 0 and summaryprecip>0 and summaryend ==0:
+                if float(
+                        hourly_data['hourly_precipitation'][i]['value']) == 0 and summaryprecip > 0 and summaryend == 0:
                     if int(datetime.strftime(date_obj, '%H')) > int(datetime.now().strftime("%H")):
                         summaryday = "今天"
                     else:
                         summaryday = "明天"
-                    summaryendstr = summaryday + str(int(datetime.strftime(date_obj, '%H')))+"点后转"+CONDITION_CN_MAP[hourly_data['hourly_skycon'][i]['value']]+"。"
+                    summaryendstr = summaryday + str(int(datetime.strftime(date_obj, '%H'))) + "点后转" + \
+                                    CONDITION_CN_MAP[hourly_data['hourly_skycon'][i]['value']] + "。"
                     summaryend += 1
                 summarystart += 1
             if summarystr:
                 hourly_summary = summarystr + summarymaxprecipstr + summaryendstr
             else:
                 hourly_summary = "未来24小时内无降水"
-                
-            self.hourly_summary = hourly_summary    
-            
+
+            self.hourly_summary = hourly_summary
+
             return hourly_forecast_data
-            
-            
+
     def getWindDir(self, deg):
-        #_LOGGER.debug(int((deg + 11.25) / 22.5))
+        # _LOGGER.debug(int((deg + 11.25) / 22.5))
         return WINDDIRECTIONS[int((deg + 11.25) / 22.5)]
 
-    
     def getWindLevel(self, res):
         res2, res3, res4 = None, None, None
         if float(res) < 1:
@@ -760,8 +766,7 @@ class colorfulclouds_weatherEntity(WeatherEntity):
             res3 = "超强台风"
             res4 = "超强台风"
         return res2
-    
-    
+
     async def async_added_to_hass(self):
         """Connect to dispatcher listening for entity data notifications."""
         """Set up a timer updating the forecasts."""
@@ -769,24 +774,24 @@ class colorfulclouds_weatherEntity(WeatherEntity):
         async def update_forecasts(_: datetime) -> None:
             if self._forecast_daily:
                 self._forecast_daily = (
-                    self._forecast_daily[1:] + self._forecast_daily[:1]
+                        self._forecast_daily[1:] + self._forecast_daily[:1]
                 )
             if self._forecast_hourly:
                 self._forecast_hourly = (
-                    self._forecast_hourly[1:] + self._forecast_hourly[:1]
+                        self._forecast_hourly[1:] + self._forecast_hourly[:1]
                 )
             if self._forecast_twice_daily:
                 self._forecast_twice_daily = (
-                    self._forecast_twice_daily[1:] + self._forecast_twice_daily[:1]
+                        self._forecast_twice_daily[1:] + self._forecast_twice_daily[:1]
                 )
             await self.async_update_listeners(None)
 
         # self.async_on_remove(
-            # async_track_time_interval(
-                # self.hass, update_forecasts, WEATHER_UPDATE_INTERVAL
-            # )
+        # async_track_time_interval(
+        # self.hass, update_forecasts, WEATHER_UPDATE_INTERVAL
         # )
-        
+        # )
+
         self.async_on_remove(
             self.coordinator.async_add_listener(self.async_write_ha_state)
         )
@@ -794,4 +799,3 @@ class colorfulclouds_weatherEntity(WeatherEntity):
     async def async_update(self):
         """Update colorfulclouds-weather entity."""
         await self.coordinator.async_request_refresh()
-        
