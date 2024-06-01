@@ -15477,7 +15477,7 @@
 			</ha-card>
 		  `;
 		}
-	    const iconUrl = config.icon || '/colorfulclouds-weather-local/lovelace-colorfulclouds-weather-card/weathericons/';
+	    const iconUrl = config.icon || '/hacsfiles/lovelace-colorfulclouds-weather-card/weathericons/';
 		const lang = _hass.selectedLanguage || _hass.language;
 		const next_rising = new Date(_hass.states["sun.sun"].attributes.next_rising);
 		const next_setting = new Date(_hass.states["sun.sun"].attributes.next_setting);  
